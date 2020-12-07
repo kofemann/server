@@ -80,7 +80,14 @@ class URLGenerator implements IURLGenerator {
 	 * Returns a url to the given route.
 	 */
 	public function linkToRoute(string $routeName, array $arguments = []): string {
-		return $this->router->generate($routeName, $arguments);
+		$frontControllerActive = $this->isFrontControllerActive();
+		$url = $this->router->generate($routeName, $arguments);
+
+		if (strpos($url, '/index.php/') !== false || $frontControllerActive) {
+			return $url;
+		}
+
+		return 'index.php/' . $url;
 	}
 
 	/**
@@ -121,7 +128,7 @@ class URLGenerator implements IURLGenerator {
 	 * Returns a url to the given app and file.
 	 */
 	public function linkTo(string $appName, string $file, array $args = []): string {
-		$frontControllerActive = ($this->config->getSystemValue('htaccess.IgnoreFrontController', false) === true || getenv('front_controller_active') === 'true');
+		$frontControllerActive = $this->isFrontControllerActive();
 
 		if ($appName !== '') {
 			$app_path = \OC_App::getAppPath($appName);
@@ -270,5 +277,14 @@ class URLGenerator implements IURLGenerator {
 	 */
 	public function getBaseUrl(): string {
 		return $this->request->getServerProtocol() . '://' . $this->request->getServerHost() . \OC::$WEBROOT;
+	}
+
+	/**
+	 * is index.php needed ?
+	 * @return bool
+	 */
+	protected function isFrontControllerActive() {
+		return $this->config->getSystemValue('htaccess.IgnoreFrontController', false) === true
+			|| getenv('front_controller_active') === 'true';
 	}
 }
